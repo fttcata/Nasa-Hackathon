@@ -210,8 +210,8 @@
   </div>
 
   <script>
-//    const username = "gpmorgan_kuba_albert";
-//    const password = "x7X5RWbA19ViDr4ZQ45O";
+    const username = "petre_andreicatalin";
+    const password = "f1vgoYBvtLq48j4P8xW0";
 
     const activityMap = {
       "Unspecified": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p"],
@@ -331,52 +331,7 @@
       }
     }
 
-async function getWeatherData() {
-  if (!state.latLng) {
-    alert("Please select a location on the map or search.");
-    return;
-  }
 
-  const fromDate = document.getElementById('fromDate').value;
-  const toDate = document.getElementById('toDate').value;
-  if (!fromDate || !toDate) {
-    alert("Please select a start and end date.");
-    return;
-  }
-
-  if (selectedActivities.length === 0) selectedActivities.push("Unspecified");
-
-  const parameters = selectedActivities
-    .map(a => activityMap[a][0])
-    .join(",")
-    .split(",")
-    .filter((v, i, a) => a.indexOf(v) === i)
-    .join(",");
-
-  const startISO = new Date(fromDate).toISOString().split('T')[0] + "T00:00:00Z";
-  const endISO = new Date(toDate).toISOString().split('T')[0] + "T23:59:00Z";
-  
-  // 1. Build the URL for YOUR serverless function, not Meteomatics
-  const url = `/api/getWeather?lat=${state.latLng.lat}&lng=${state.latLng.lng}&startISO=${startISO}&endISO=${endISO}&parameters=${parameters}`;
-  
-  const outputElement = document.getElementById('weatherOutput');
-  outputElement.textContent = 'Fetching weather...'; // Loading message
-
-  try {
-    // 2. Fetch from your own URL. No headers or credentials are needed here!
-    const res = await fetch(url);
-
-    const data = await res.json(); // Always expect JSON back now
-    if (!res.ok) {
-        // The 'data.error' will contain the message from our serverless function
-        throw new Error(`HTTP ${res.status} - ${data.error}`);
-    }
-
-    outputElement.textContent = JSON.stringify(data, null, 2);
-  } catch (err) {
-    outputElement.textContent = "Error fetching weather: " + err.message;
-  }
-}
 
     function exportJSON() {
       const fromDate = document.getElementById('fromDate').value;
@@ -395,6 +350,30 @@ async function getWeatherData() {
       a.click();
       URL.revokeObjectURL(url);
     }
+    async function getWeatherData() {
+    if (!state.latLng) return alert("Select a location.");
+
+    try {
+        const res = await fetch("/api/weather", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                lat: state.latLng.lat,
+                lng: state.latLng.lng
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || `HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+        document.getElementById('weatherOutput').textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+        document.getElementById('weatherOutput').textContent = "Error fetching weather: " + err;
+    }
+}
   </script>
 
    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkk5aRWm5Yr_X9GhJIjljLgVL9jXlZ_0k&libraries=places&callback=initMap"></script>
