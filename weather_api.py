@@ -2,6 +2,8 @@ import requests
 from requests.exceptions import HTTPError, RequestException
 from datetime import datetime
 
+USERNAME = "petre_andreicatalin"
+PASSWORD = "f1vgoYBvtLq48j4P8xW0"
 
 class WeatherAPI:
     def __init__(self, username, password, parameters):
@@ -30,3 +32,7 @@ class WeatherAPI:
             print(f"An unexpected error occurred: {err}")
 
         return None
+    
+#test
+weather = WeatherAPI("petre_andreicatalin", "f1vgoYBvtLq48j4P8xW0", ["t_2m:C"])
+print(weather.get_weather_data(46.770439, 23.591423, datetime(2024, 6, 20, 15, 0)))
