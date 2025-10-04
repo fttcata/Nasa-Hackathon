@@ -2,7 +2,7 @@
 
 ## We are going to win this
 
-Website: https://weatherwary-earth.l.ink/
+Website: https://fttcata.github.io/Nasa-Hackathon
 - interactive map --> Google earth/maps API --> pin-point location input for research
 - filter for location
 - filter for time windows
