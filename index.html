@@ -20,51 +20,43 @@
 
     /* Layout thirds */
     .panel {
-  flex: 1;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  box-sizing: border-box;
-  padding: 30px;
-}
+      flex: 1;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-sizing: border-box;
+      padding: 30px;
+    }
 
-/* Adjust flex for center panel only */
-#center-panel {
-  flex: 2;  /* bigger than left/right panels */
-}
+    #center-panel {
+      flex: 2;
+      background-color: #0b1220;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
 
     #left-panel {
       background-color: #0b1220;
-    
+      border-right: 1px solid rgba(255,255,255,0.05);
     }
-
-      #center-panel {
-  background-color: #0b1220;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex: 2; /* make center panel take more space than left/right */
-}
 
     #right-panel {
       background-color: #0b1220;
-
+      border-left: 1px solid rgba(255,255,255,0.05);
     }
 
     /* Map */
-  
+    #map {
+      width: 90%;
+      height: 80%;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 0 25px rgba(0,0,0,0.3);
+    }
 
-#map {
-  width: 90%;  /* increase width */
-  height: 80%; /* increase height */
-  border-radius: 20px;
-  overflow: hidden;
-  box-shadow: 0 0 25px rgba(0,0,0,0.3);
-}
-
-    /* Titles */
     h2 {
       color: #46b3ff;
       margin-bottom: 20px;
@@ -110,7 +102,6 @@
       width: 90%;
     }
 
-    /* Activity tag input */
     .tag-input {
       display: flex;
       flex-wrap: wrap;
@@ -193,9 +184,9 @@
         <input id="toDate" type="date" />
       </div>
 
-      <label>Activities</label>
+      <label>Activities & Weather</label>
       <div class="tag-input" id="activityTags">
-        <input type="text" id="activitySearchInput" placeholder="Search activities..." />
+        <input type="text" id="activitySearchInput" placeholder="Search activities, weather..." />
       </div>
       <div class="suggestions" id="activitySuggestions"></div>
 
@@ -218,19 +209,19 @@
   </div>
 
   <script>
-    const username = "petre_andreicatalin";
-    const password = "f1vgoYBvtLq48j4P8xW0";
-
     const activityMap = {
-      "Unspecified": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p"],
-      "Outdoor Celebration": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms"],
-      "Hiking": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,forest_fire_risk_index,sunset"],
-      "Fishing": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,ocean_current_speed:m/s,ocean_current_direction:d"],
-      "Swimming": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,uv_index,ocean_current_speed:m/s,water_temperature_0m:C,wave_height:m"],
-      "Skiing": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,snow_height_0cm:cm,snowfall_24h:cm,fresh_snow_24h:cm,sunrise,sunset"],
-      "Camping": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,sunrise,sunset"],
-      "Outdoor Exercise": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,uv_index"],
-      "Wind Sailing": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,ocean_current_speed:m/s,ocean_current_direction:d,wave_height:m"]
+      // Activities
+      "Hiking": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms","relative_humidity_2m:p","forest_fire_risk_index","sunset"],
+      "Swimming": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms","relative_humidity_2m:p","uv_index","ocean_current_speed:m/s","water_temperature_0m:C","wave_height:m"],
+      "Camping": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms","relative_humidity_2m:p","sunrise","sunset"],
+      "Fishing": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms","ocean_current_speed:m/s","ocean_current_direction:d"],
+      "Skiing": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms","relative_humidity_2m:p","snow_height_0cm:cm","snowfall_24h:cm","fresh_snow_24h:cm","sunrise","sunset"],
+
+      // Weather types
+      "Sunny": ["t_2m:C","uv_index","sunrise","sunset"],
+      "Cloudy": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms"],
+      "Rainy": ["t_2m:C","precip_1h:mm","wind_speed_10m:ms","relative_humidity_2m:p"],
+      "Windy": ["wind_speed_10m:ms","t_2m:C"]
     };
 
     const allActivities = Object.keys(activityMap);
@@ -332,14 +323,11 @@
         if (state.marker) state.marker.setMap(null);
         state.marker = new google.maps.Marker({ position: latLng, map: map });
         
-        // This robustly checks if lat/lng are functions or properties
         const lat = typeof latLng.lat === 'function' ? latLng.lat() : latLng.lat;
         const lng = typeof latLng.lng === 'function' ? latLng.lng() : latLng.lng;
         state.latLng = { lat, lng };
       }
     }
-
-
 
     function exportJSON() {
       const fromDate = document.getElementById('fromDate').value;
@@ -358,32 +346,33 @@
       a.click();
       URL.revokeObjectURL(url);
     }
+
     async function getWeatherData() {
-    if (!state.latLng) return alert("Select a location.");
+      if (!state.latLng) return alert("Select a location.");
 
-    try {
-        const res = await fetch("/api/weather", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                lat: state.latLng.lat,
-                lng: state.latLng.lng
-            })
-        });
+      try {
+          const res = await fetch("/api/weather", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                  lat: state.latLng.lat,
+                  lng: state.latLng.lng
+              })
+          });
 
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || `HTTP ${res.status}`);
-        }
+          if (!res.ok) {
+              const err = await res.json();
+              throw new Error(err.error || `HTTP ${res.status}`);
+          }
 
-        const data = await res.json();
-        document.getElementById('weatherOutput').textContent = JSON.stringify(data, null, 2);
-    } catch (err) {
-        document.getElementById('weatherOutput').textContent = "Error fetching weather: " + err;
+          const data = await res.json();
+          document.getElementById('weatherOutput').textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+          document.getElementById('weatherOutput').textContent = "Error fetching weather: " + err;
+      }
     }
-}
   </script>
 
-   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkk5aRWm5Yr_X9GhJIjljLgVL9jXlZ_0k&libraries=places&callback=initMap"></script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkk5aRWm5Yr_X9GhJIjljLgVL9jXlZ_0k&libraries=places&callback=initMap"></script>
 </body>
 </html>
