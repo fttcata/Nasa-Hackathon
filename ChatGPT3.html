@@ -1,1 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WeatherWary.Earth</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      height: 100vh;
+      background-color: #0f1724;
+      color: #e6eef6;
+    }
+
+    #sidebar {
+      width: 320px;
+      background-color: #0b1220;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      border-right: 1px solid rgba(255,255,255,0.05);
+    }
+
+    #map {
+      flex-grow: 1;
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #46b3ff;
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      color: #9aa6b2;
+      font-size: 14px;
+    }
+
+    input[type="text"], select, input[type="date"], input[type="datetime-local"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 6px;
+      border: none;
+      background: rgba(255,255,255,0.1);
+      color: #e6eef6;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 14px;
+      border-radius: 8px;
+      background: linear-gradient(90deg,#46b3ff,#2bd0a6);
+      color: #022;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+    }
+
+    select option {
+      background: #0b1220;
+    }
+
+    pre {
+      background: rgba(255,255,255,0.05);
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 12px;
+      color: #b8cbe3;
+      max-height: 300px;
+    }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>WeatherWary.Earth</h2>
+    <label for="placeSearch">Search Location</label>
+    <input id="placeSearch" type="text" placeholder="Search address, city, or lat,lng" />
+    <button id="locateMe">Use My Location</button>
+
+    <label for="datetimeInput">Select Date & Time</label>
+    <input id="datetimeInput" type="datetime-local" />
+
+    <label for="activitySearch">Select Activity</label>
+    <select id="activitySearch">
+      <option value="">-- Choose an activity --</option>
+      <option>Unspecified</option>
+      <option>Outdoor Celebration</option>
+      <option>Hiking</option>
+      <option>Fishing</option>
+      <option>Swimming</option>
+      <option>Skiing</option>
+      <option>Camping</option>
+      <option>Outdoor Exercise</option>
+      <option>Wind Sailing</option>
+    </select>
+
+    <button id="getWeather">Get Weather</button>
+    <button id="exportQuery" style="background:transparent;border:1px solid #46b3ff;color:#46b3ff;margin-left:8px">Export JSON</button>
+
+    <h3 style="margin-top:20px;color:#46b3ff">Weather Result</h3>
+    <pre id="weatherOutput">No data yet.</pre>
+  </div>
+
+  <div id="map"></div>
+
+  <script>
+    const username = "petre_andreicatalin";
+    const password = "f1vgoYBvtLq48j4P8xW0";
+
+    const activityMap = {
+      "Unspecified": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p"],
+      "Outdoor Celebration": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms"],
+      "Hiking": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,forest_fire_risk_index,sunset"],
+      "Fishing": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,cloud_cover:p,ocean_current_speed:m/s,ocean_current_direction:d"],
+      "Swimming": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,uv_index,ocean_current_speed:m/s,water_temperature_0m:C,wave_height:m"],
+      "Skiing": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,snow_height_0cm:cm,snowfall_24h:cm,fresh_snow_24h:cm,cloud_cover:p,sunrise,sunset"],
+      "Camping": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,cloud_cover:p,sunrise,sunset"],
+      "Outdoor Exercise": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,uv_index"],
+      "Wind Sailing": ["t_2m:C,precip_1h:mm,wind_speed_10m:ms,relative_humidity_2m:p,cloud_cover:p,ocean_current_speed:m/s,ocean_current_direction:d,wave_height:m"]
+    };
+
+    const state = { marker: null, latLng: null };
+
+    function getParametersForActivity(activity) {
+      return activityMap[activity] || activityMap["Unspecified"];
+    }
+
+    function initMap() {
+      const map = new google.maps.Map(document.getElementById('map'), {
+        center: { lat: 20, lng: 0 },
+        zoom: 2,
+        streetViewControl: false,
+      });
+
+      map.addListener('click', (e) => placeMarker(e.latLng, map));
+
+      const input = document.getElementById('placeSearch');
+      const autocomplete = new google.maps.places.Autocomplete(input);
+      autocomplete.bindTo('bounds', map);
+      autocomplete.addListener('place_changed', () => {
+        const place = autocomplete.getPlace();
+        if (!place.geometry) {
+          alert('Selected place has no geometry');
+          return;
+        }
+        map.panTo(place.geometry.location);
+        map.setZoom(6);
+        placeMarker(place.geometry.location, map);
+      });
+
+      document.getElementById('locateMe').addEventListener('click', () => {
+        if (!navigator.geolocation) {
+          alert('Geolocation not supported');
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(pos => {
+          const p = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          map.panTo(p);
+          map.setZoom(6);
+          placeMarker(p, map, 'My location');
+        }, err => alert('Unable to get location: ' + err.message));
+      });
+
+      document.getElementById('getWeather').addEventListener('click', getWeatherData);
+      document.getElementById('exportQuery').addEventListener('click', exportJSON);
+
+      function placeMarker(latLng, map) {
+        if (state.marker) state.marker.setMap(null);
+        state.marker = new google.maps.Marker({ position: latLng, map: map });
+        state.latLng = { lat: latLng.lat?.() ?? latLng.lat, lng: latLng.lng?.() ?? latLng.lng };
+      }
+    }
+
+    async function getWeatherData() {
+      if (!state.latLng) {
+        alert("Please select a location on the map or search.");
+        return;
+      }
+
+      const datetime = document.getElementById('datetimeInput').value;
+      const activity = document.getElementById('activitySearch').value || "Unspecified";
+      const parameters = getParametersForActivity(activity)[0];
+
+      if (!datetime) {
+        alert("Please select a date and time.");
+        return;
+      }
+
+      const isoDatetime = new Date(datetime).toISOString().split('.')[0] + "Z";
+      const url = `https://${username}:${password}@api.meteomatics.com/${isoDatetime}/${parameters}/${state.latLng.lat},${state.latLng.lng}/json`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        document.getElementById('weatherOutput').textContent = JSON.stringify(data, null, 2);
+      } catch (err) {
+        document.getElementById('weatherOutput').textContent = "Error fetching weather: " + err;
+      }
+    }
+
+    function exportJSON() {
+      const datetime = document.getElementById('datetimeInput').value;
+      const activity = document.getElementById('activitySearch').value || "Unspecified";
+      const data = {
+        location: state.latLng,
+        datetime,
+        activity,
+        createdAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'weather_query.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+  <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkk5aRWm5Yr_X9GhJIjljLgVL9jXlZ_0k&libraries=places&callback=initMap"></script>
+</body>
+</html>
 
