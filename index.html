@@ -281,17 +281,11 @@
     }
 
     // ---- Map + Weather ----
-    async function initMap() {
-      // --- FIX: Load the necessary libraries from Google Maps ---
-      const { Map } = await google.maps.importLibrary("maps");
-      const { AdvancedMarkerElement } = await google.maps.importLibrary("marker");
-      const { Place } = await google.maps.importLibrary("places");
-
-      const map = new Map(document.getElementById('map'), {
+    function initMap() {
+      const map = new google.maps.Map(document.getElementById('map'), {
         center: { lat: 20, lng: 0 },
         zoom: 2,
         streetViewControl: false,
-        mapId: 'DEMO_MAP_ID' // Required for AdvancedMarkerElement
       });
 
       map.addListener('click', (e) => placeMarker(e.latLng, map));
@@ -326,27 +320,18 @@
       document.getElementById('getWeather').addEventListener('click', getWeatherData);
       document.getElementById('exportQuery').addEventListener('click', exportJSON);
 
-      // --- FIX: Use the new AdvancedMarkerElement ---
       function placeMarker(latLng, map) {
-        // Clear previous marker if it exists
-        if (state.marker) {
-          state.marker.position = latLng;
-        } else {
-          // Create the new, modern marker
-          state.marker = new AdvancedMarkerElement({
-            position: latLng,
-            map: map,
-          });
-        }
+        if (state.marker) state.marker.setMap(null);
+        state.marker = new google.maps.Marker({ position: latLng, map: map });
         
+        // This robustly checks if lat/lng are functions or properties
         const lat = typeof latLng.lat === 'function' ? latLng.lat() : latLng.lat;
         const lng = typeof latLng.lng === 'function' ? latLng.lng() : latLng.lng;
         state.latLng = { lat, lng };
       }
     }
 
-    // ... (getWeatherData and exportJSON functions are the same as the previous correct version) ...
-    async function getWeatherData() {
+async function getWeatherData() {
       if (!state.latLng) {
         alert("Please select a location on the map or search.");
         return;
@@ -374,6 +359,7 @@
       const url = `https://api.meteomatics.com/${startISO}--${endISO}:PT6H/${parameters}/${state.latLng.lat},${state.latLng.lng}/json`;
 
       try {
+        // 2. We add an options object to fetch with the Authorization header
         const res = await fetch(url, {
           headers: {
             'Authorization': 'Basic ' + btoa(`${username}:${password}`)
@@ -381,7 +367,7 @@
         });
 
         if (!res.ok) {
-            const errorData = await res.json();
+            const errorData = await res.json(); // Try to get more info from the API
             throw new Error(`HTTP ${res.status} - ${errorData.message}`);
         }
         const data = await res.json();
@@ -391,10 +377,25 @@
       }
     }
 
-
-    // Call initMap to start the application
-    initMap();
+    function exportJSON() {
+      const fromDate = document.getElementById('fromDate').value;
+      const toDate = document.getElementById('toDate').value;
+      const data = {
+        location: state.latLng,
+        timeWindow: { from: fromDate, to: toDate },
+        activities: selectedActivities,
+        createdAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'weather_query.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
   </script>
-   <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkk5aRWm5Yr_X9GhJIjljLgVL9jXlZ_0k&libraries=places"></script>
+
+   <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDkk5aRWm5Yr_X9GhJIjljLgVL9jXlZ_0k&libraries=places&callback=initMap"></script>
 </body>
 </html>
