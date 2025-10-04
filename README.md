@@ -4,8 +4,9 @@
 
 Website: https://weatherwary-earth.l.ink/
 - interactive map --> Google earth/maps API --> pin-point location input for research
-- search tool for location
-- search tool for time windows 
+- filter for location
+- filter for time windows
+- filter for activities
 
 DataFlow 
 - website/Google maps API - user uses maps to put pin - coordinates sent as request to Meomatics API
