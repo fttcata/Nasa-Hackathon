@@ -20,27 +20,33 @@
 
     /* Layout thirds */
     .panel {
-      flex: 1;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      box-sizing: border-box;
-      padding: 30px;
-    }
+  flex: 1;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  box-sizing: border-box;
+  padding: 30px;
+}
+
+/* Adjust flex for center panel only */
+#center-panel {
+  flex: 2;  /* bigger than left/right panels */
+}
 
     #left-panel {
       background-color: #0b1220;
       border-right: 1px solid rgba(255,255,255,0.05);
     }
 
-    #center-panel {
-      background: radial-gradient(circle at center, #152338, #0f1724);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
+      #center-panel {
+  background-color: #0b1220;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 2; /* make center panel take more space than left/right */
+}
 
     #right-panel {
       background-color: #0b1220;
@@ -48,13 +54,15 @@
     }
 
     /* Map */
-    #map {
-      width: 80%;
-      height: 60%;
-      border-radius: 20px;
-      overflow: hidden;
-      box-shadow: 0 0 25px rgba(0,0,0,0.3);
-    }
+  
+
+#map {
+  width: 90%;  /* increase width */
+  height: 80%; /* increase height */
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 0 25px rgba(0,0,0,0.3);
+}
 
     /* Titles */
     h2 {
